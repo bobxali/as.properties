@@ -20,6 +20,7 @@ const Home = () => {
           price: Number(item.price || 0),
           currency: item.currency || "USD",
           location: item.location || "Lebanon",
+          listingType: item.listingType || item.listing_type || "",
           rooms: Number(item.rooms || 0),
           baths: Number(item.baths || 0),
           area: Number(item.area || 0),
@@ -49,7 +50,10 @@ const Home = () => {
               title="Signature listings"
               subtitle="Handpicked properties that define AS.Properties' luxury standard."
             />
-            <PropertyGrid properties={properties.slice().sort((a, b) => Number(b.hotDeal) - Number(a.hotDeal))} />
+            <PropertyGrid
+              properties={properties.slice().sort((a, b) => Number(b.hotDeal) - Number(a.hotDeal))}
+              showWhatsapp={false}
+            />
           </div>
           <div className="space-y-6">
             <SectionHeader

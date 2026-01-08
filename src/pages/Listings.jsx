@@ -20,6 +20,7 @@ const Listings = () => {
           price: Number(item.price || 0),
           currency: item.currency || "USD",
           location: item.location || "Lebanon",
+          listingType: item.listingType || item.listing_type || "",
           rooms: Number(item.rooms || 0),
           baths: Number(item.baths || 0),
           area: Number(item.area || 0),

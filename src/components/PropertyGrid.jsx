@@ -1,6 +1,6 @@
 import PropertyCard from "./PropertyCard"
 
-const PropertyGrid = ({ properties, compareIds, onToggleCompare }) => {
+const PropertyGrid = ({ properties, compareIds, onToggleCompare, showWhatsapp = true }) => {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {properties.map((property) => (
@@ -10,6 +10,7 @@ const PropertyGrid = ({ properties, compareIds, onToggleCompare }) => {
           showCompare={Boolean(compareIds)}
           selected={compareIds?.includes(property.id)}
           onToggleCompare={onToggleCompare}
+          showWhatsapp={showWhatsapp}
         />
       ))}
     </div>

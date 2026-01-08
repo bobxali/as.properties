@@ -8,7 +8,19 @@ const statusClass = {
   Negotiation: "badge-negotiation"
 }
 
-const PropertyCard = ({ property, showCompare = false, selected = false, onToggleCompare }) => {
+const statusLabelMap = {
+  متوفر: "Available",
+  محجوز: "Reserved",
+  مباع: "Sold",
+  "قيد التفاوض": "Negotiation"
+}
+
+const listingTypeMap = {
+  للبيع: "For sale",
+  للإيجار: "For rent"
+}
+
+const PropertyCard = ({ property, showCompare = false, selected = false, onToggleCompare, showWhatsapp = true }) => {
   const images = useMemo(() => {
     if (Array.isArray(property.media) && property.media.length) {
       return property.media.map((item) => (item?.url ? item.url : item))
@@ -17,6 +29,13 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
   }, [property])
   const [activeIndex, setActiveIndex] = useState(0)
   const activeImage = images[activeIndex] || property.image
+  const rawStatus = property.status || "Available"
+  const statusLabel = statusLabelMap[rawStatus] || rawStatus
+  const rawListingType = property.listingType || property.listing_type || ""
+  const listingTypeKey = rawListingType.toLowerCase()
+  const listingTypeLabel =
+    listingTypeMap[rawListingType] ||
+    (listingTypeKey.includes("rent") ? "For rent" : listingTypeKey.includes("sale") ? "For sale" : "")
   const whatsappMessage = encodeURIComponent(
     `Hi AS.Properties, I'm interested in ${property.title}.`
   )
@@ -51,20 +70,27 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
             Hot deal
           </div>
         ) : null}
-        <div className={`badge absolute left-4 top-4 ${statusClass[property.status] || "badge-available"}`}>
-          {property.status}
+        <div className={`badge absolute left-4 top-4 ${statusClass[statusLabel] || "badge-available"}`}>
+          {statusLabel}
         </div>
-        <button
-          type="button"
-          className="absolute bottom-4 right-4 rounded-full bg-green-500/90 px-3 py-1 text-xs text-white"
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            window.open(whatsappLink, "_blank", "noopener,noreferrer")
-          }}
-        >
-          WhatsApp
-        </button>
+        {listingTypeLabel ? (
+          <div className="absolute left-4 top-11 rounded-full bg-brand-charcoal/80 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white">
+            {listingTypeLabel}
+          </div>
+        ) : null}
+        {showWhatsapp ? (
+          <button
+            type="button"
+            className="absolute bottom-4 right-4 rounded-full bg-green-500/90 px-3 py-1 text-xs text-white"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              window.open(whatsappLink, "_blank", "noopener,noreferrer")
+            }}
+          >
+            WhatsApp
+          </button>
+        ) : null}
         <div className="absolute bottom-4 left-4 rounded-full bg-brand-charcoal/80 px-3 py-1 text-xs text-white">
           {property.views} views
         </div>
