@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: "Manrope", sans-serif;
+}
+
+.logo-text {
+  font-family: "Playfair Display", serif;
+  letter-spacing: 0.08em;
+}
+
+.hero-glow {
+  background: radial-gradient(circle at top left, rgba(255, 193, 7, 0.35), transparent 55%),
+    radial-gradient(circle at 20% 80%, rgba(26, 35, 126, 0.25), transparent 55%);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(18px);
+}
+
+.hero-card {
+  background: linear-gradient(135deg, rgba(18, 20, 24, 0.96), rgba(34, 36, 46, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.6);
+}
+
+.card-lift {
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 55px -25px rgba(15, 23, 42, 0.5);
+}
+
+.fade-in {
+  animation: fadeUp 0.7s ease forwards;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.4) 0%, rgba(226, 232, 240, 0.8) 50%, rgba(226, 232, 240, 0.4) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(26, 35, 126, 0.35);
+  border-radius: 999px;
+}
+
+.rtl {
+  direction: rtl;
+  font-family: "Noto Kufi Arabic", sans-serif;
+}
+
+.rtl .ltr-only {
+  direction: ltr;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-available {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.badge-reserved {
+  background: rgba(251, 191, 36, 0.2);
+  color: #b45309;
+}
+
+.badge-sold {
+  background: rgba(248, 113, 113, 0.2);
+  color: #b91c1c;
+}
+
+.badge-negotiation {
+  background: rgba(96, 165, 250, 0.2);
+  color: #1d4ed8;
+}
+
+.step-pill {
+  border: 1px solid rgba(26, 35, 126, 0.25);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+textarea {
+  resize: vertical;
+}
