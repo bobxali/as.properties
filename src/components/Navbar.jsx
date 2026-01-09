@@ -45,9 +45,12 @@ const Navbar = () => {
         </nav>
         <div className="flex items-center gap-3">
           <LanguageToggle />
-          <button className="hidden rounded-full border border-brand-gold px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold transition hover:bg-brand-gold hover:text-brand-charcoal md:inline">
+          <a
+            href="#contact"
+            className="hidden rounded-full border border-brand-gold px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold transition hover:bg-brand-gold hover:text-brand-charcoal md:inline"
+          >
             {t.nav.contact}
-          </button>
+          </a>
         </div>
       </div>
     </header>

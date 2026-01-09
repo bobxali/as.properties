@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { api } from "../lib/api"
 import { supabase } from "../lib/supabase"
@@ -24,6 +24,8 @@ const AdminWizard = () => {
   const [lastAddress, setLastAddress] = useState("")
   const [mediaItems, setMediaItems] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
   const [form, setForm] = useState({
     propertyTypes: [],
     listingType: "Sale",
@@ -293,6 +295,14 @@ const AdminWizard = () => {
 
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const showToast = (type, message) => {
+    setToast({ type, message })
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current)
+    }
+    toastTimer.current = setTimeout(() => setToast(null), 4000)
   }
 
   const addMediaFiles = (files) => {
@@ -655,18 +665,27 @@ const AdminWizard = () => {
         storageFolder,
         createdAt: new Date().toISOString()
       }
-      await api.saveProperty(payload)
-      alert("Property saved (Supabase or local draft).")
-      navigate("/admin")
-    } catch (error) {
-      alert(error.message || "Upload failed. Check storage bucket and permissions.")
-    } finally {
+        await api.saveProperty(payload)
+        showToast("success", "Listing published successfully.")
+        navigate("/admin")
+      } catch (error) {
+        showToast("error", error.message || "Publish failed. Check storage bucket and permissions.")
+      } finally {
       setUploading(false)
     }
   }
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-8 px-6 py-12 text-base md:text-[15px]">
+      {toast ? (
+        <div
+          className={`fixed right-6 top-6 z-50 rounded-2xl px-4 py-3 text-sm shadow-lg ${
+            toast.type === "error" ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
+          }`}
+        >
+          {toast.message}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-brand-gold">Admin</div>

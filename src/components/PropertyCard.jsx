@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 
 const statusClass = {
   Available: "badge-available",
@@ -29,6 +29,8 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
   }, [property])
   const [activeIndex, setActiveIndex] = useState(0)
   const activeImage = images[activeIndex] || property.image
+  const touchStartX = useRef(null)
+  const touchDeltaX = useRef(0)
   const rawStatus = property.status || "Available"
   const statusLabel = statusLabelMap[rawStatus] || rawStatus
   const rawListingType = property.listingType || property.listing_type || ""
@@ -46,7 +48,29 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
       to={`/properties/${property.id}`}
       className={`card-lift group overflow-hidden rounded-3xl bg-white shadow-lg ${property.hotDeal ? "ring-2 ring-brand-gold/60" : ""}`}
     >
-      <div className="relative h-52 overflow-hidden">
+      <div
+        className="relative h-52 overflow-hidden"
+        onTouchStart={(event) => {
+          if (event.touches.length !== 1) return
+          touchStartX.current = event.touches[0].clientX
+          touchDeltaX.current = 0
+        }}
+        onTouchMove={(event) => {
+          if (touchStartX.current === null) return
+          touchDeltaX.current = event.touches[0].clientX - touchStartX.current
+        }}
+        onTouchEnd={() => {
+          if (touchStartX.current === null || images.length < 2) return
+          const delta = touchDeltaX.current
+          const threshold = 40
+          if (Math.abs(delta) >= threshold) {
+            const direction = delta < 0 ? 1 : -1
+            setActiveIndex((prev) => (prev + direction + images.length) % images.length)
+          }
+          touchStartX.current = null
+          touchDeltaX.current = 0
+        }}
+      >
         <img
           src={activeImage}
           alt={property.title}

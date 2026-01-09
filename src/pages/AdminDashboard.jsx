@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts"
 import SectionHeader from "../components/SectionHeader"
 import StatCard from "../components/StatCard"
@@ -14,6 +14,8 @@ const AdminDashboard = () => {
   const [properties, setProperties] = useState([])
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
+  const [toast, setToast] = useState(null)
+  const toastTimer = useRef(null)
 
   useEffect(() => {
     const load = async () => {
@@ -50,8 +52,25 @@ const AdminDashboard = () => {
     navigate("/admin/login")
   }
 
+  const showToast = (type, message) => {
+    setToast({ type, message })
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current)
+    }
+    toastTimer.current = setTimeout(() => setToast(null), 4000)
+  }
+
   return (
     <section className="mx-auto w-full max-w-6xl space-y-8 px-6 py-12 text-base md:text-[15px]">
+      {toast ? (
+        <div
+          className={`fixed right-6 top-6 z-50 rounded-2xl px-4 py-3 text-sm shadow-lg ${
+            toast.type === "error" ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
+          }`}
+        >
+          {toast.message}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <SectionHeader
           eyebrow="Admin"
@@ -165,7 +184,7 @@ const AdminDashboard = () => {
                               await api.deleteProperty(item.id)
                               setProperties((prev) => prev.filter((row) => row.id !== item.id))
                             } catch (error) {
-                              alert(error.message || "Delete failed. Check permissions.")
+                              showToast("error", error.message || "Delete failed. Check permissions.")
                             }
                           }}
                         >

@@ -87,9 +87,15 @@ const Home = () => {
               "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?q=80&w=900&auto=format&fit=crop",
               "https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=900&auto=format&fit=crop"
             ].map((src) => (
-              <div key={src} className="card-lift overflow-hidden rounded-3xl">
+              <a
+                key={src}
+                href="https://www.instagram.com/as.properties.lb/"
+                target="_blank"
+                rel="noreferrer"
+                className="card-lift overflow-hidden rounded-3xl"
+              >
                 <img src={src} alt="Instagram preview" className="h-52 w-full object-cover" loading="lazy" />
-              </div>
+              </a>
             ))}
           </div>
         </div>

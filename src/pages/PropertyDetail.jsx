@@ -33,7 +33,8 @@ const PropertyDetail = () => {
             area: Number(found.area || 0),
             status: found.status || "Available",
             views: Number(found.views || 0),
-            media: Array.isArray(found.media) ? found.media : []
+            media: Array.isArray(found.media) ? found.media : [],
+            specs: found.specs || {}
           }
         : null
       if (normalized) {
@@ -61,6 +62,26 @@ const PropertyDetail = () => {
   const galleryImages = useMemo(() => {
     if (property?.media?.length) return property.media.map((item) => item?.url || item)
     return fallbackGallery
+  }, [property])
+
+  const specItems = useMemo(() => {
+    if (!property?.specs) return []
+    const specs = property.specs || {}
+    const items = [
+      { label: "Ownership", value: specs.ownershipDoc },
+      { label: "Condition", value: specs.condition },
+      { label: "Floor", value: specs.floor },
+      { label: "Total floors", value: specs.floorsTotal },
+      { label: "Year built", value: specs.yearBuilt },
+      { label: "Kitchen", value: specs.kitchen },
+      { label: "Finishing", value: specs.finishing },
+      { label: "Water source", value: Array.isArray(specs.waterSources) ? specs.waterSources.join(", ") : specs.waterSources },
+      { label: "Amenities", value: Array.isArray(specs.amenities) ? specs.amenities.join(", ") : specs.amenities },
+      { label: "Features", value: Array.isArray(specs.features) ? specs.features.join(", ") : specs.features },
+      { label: "Payment terms", value: Array.isArray(specs.paymentTerms) ? specs.paymentTerms.join(", ") : specs.paymentTerms },
+      { label: "Negotiable", value: specs.negotiable ? "Yes" : specs.negotiable === false ? "No" : "" }
+    ]
+    return items.filter((item) => item.value !== null && item.value !== undefined && String(item.value).trim() !== "")
   }, [property])
 
   if (!property) {
@@ -98,6 +119,20 @@ const PropertyDetail = () => {
                 <img src={image} alt="Gallery" className="h-full w-full object-cover" />
               </button>
             ))}
+          </div>
+          <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
+            <div className="text-xs uppercase tracking-[0.2em] text-brand-slate">Specifications</div>
+            {specItems.length ? (
+              <ul className="mt-3 space-y-2 text-sm text-brand-slate">
+                {specItems.map((item) => (
+                  <li key={item.label}>
+                    <span className="font-semibold text-brand-charcoal">{item.label}:</span> {item.value}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-3 text-sm text-brand-slate">No specifications provided.</div>
+            )}
           </div>
         </div>
         <div className="space-y-6">
@@ -137,14 +172,6 @@ const PropertyDetail = () => {
             </div>
           </div>
           <InquiryForm propertyTitle={property.title} />
-          <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-            <div className="text-xs uppercase tracking-[0.2em] text-brand-slate">Specifications</div>
-            <ul className="mt-3 space-y-2 text-sm text-brand-slate">
-              <li>Sea view, private parking, concierge service</li>
-              <li>Smart home system, high-end finishing level</li>
-              <li>Pet friendly, elevator access, storage room</li>
-            </ul>
-          </div>
           <div className="flex justify-center">
             <a
               href={`https://wa.me/96171115980?text=${encodeURIComponent(`Hi AS.Properties, I'm interested in ${property.title}.`)}`}
