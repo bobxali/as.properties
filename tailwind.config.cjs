@@ -11,17 +11,17 @@ module.exports = {
       },
       colors: {
         brand: {
-          navy: "#1a237e",
-          gold: "#c9a45c",
-          ink: "#0d0f1a",
-          sand: "#f7f4ef",
-          charcoal: "#111315",
-          silver: "#9aa0a6",
-          slate: "#2c2f33"
+          navy: "#1b2233",
+          gold: "#b89153",
+          ink: "#0b0e12",
+          sand: "#f6f4f0",
+          charcoal: "#101215",
+          silver: "#b3b7bd",
+          slate: "#3b3f45"
         }
       },
       boxShadow: {
-        glow: "0 20px 60px -20px rgba(26, 35, 126, 0.45)"
+        glow: "0 20px 60px -20px rgba(27, 34, 51, 0.45)"
       },
       keyframes: {
         floatSlow: {

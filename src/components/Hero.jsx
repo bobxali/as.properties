@@ -42,7 +42,7 @@ const Hero = () => {
                   }}
                 />
                 <span className="sr-only">AS.Properties</span>
-                <div className="logo-text text-xs uppercase tracking-[0.45em] text-brand-gold">AS.Properties</div>
+                <div className="logo-text text-xs uppercase tracking-[0.45em] text-brand-silver">AS.Properties</div>
               </div>
               <div className="rounded-full border border-brand-gold/40 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-brand-gold">
                 {t("hero.primeBadge")}

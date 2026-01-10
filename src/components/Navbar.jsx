@@ -41,7 +41,7 @@ const Navbar = () => {
           />
           <span className="sr-only">AS.Properties</span>
           <div>
-            <div className="logo-text text-base uppercase tracking-[0.28em] text-brand-gold md:text-lg">AS.Properties</div>
+            <div className="logo-text text-base uppercase tracking-[0.28em] text-brand-silver md:text-lg">AS.Properties</div>
             <div className="text-[11px] uppercase tracking-[0.35em] text-brand-silver md:text-xs">Lebanon</div>
           </div>
         </Link>

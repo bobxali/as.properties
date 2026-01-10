@@ -67,6 +67,17 @@ const PropertyDetail = () => {
     return () => clearTimeout(timer)
   }, [id, property])
 
+  useEffect(() => {
+    const href = `${window.location.origin}/properties/${id}`
+    let link = document.querySelector("link[rel='canonical']")
+    if (!link) {
+      link = document.createElement("link")
+      link.setAttribute("rel", "canonical")
+      document.head.appendChild(link)
+    }
+    link.setAttribute("href", href)
+  }, [id])
+
   const galleryImages = useMemo(() => {
     if (property?.media?.images && Array.isArray(property.media.images)) {
       return property.media.images.map((item) => item?.url || item?.path || item).filter(Boolean)
