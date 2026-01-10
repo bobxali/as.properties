@@ -1,5 +1,6 @@
-import { Link } from "react-router-dom"
+﻿import { Link } from "react-router-dom"
 import { useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 const statusClass = {
   Available: "badge-available",
@@ -8,22 +9,32 @@ const statusClass = {
   Negotiation: "badge-negotiation"
 }
 
-const statusLabelMap = {
-  متوفر: "Available",
-  محجوز: "Reserved",
-  مباع: "Sold",
-  "قيد التفاوض": "Negotiation"
+const statusLabelKey = {
+  Available: "status.available",
+  Reserved: "status.reserved",
+  Sold: "status.sold",
+  Negotiation: "status.negotiation",
+  "متوفر": "status.available",
+  "محجوز": "status.reserved",
+  "مباع": "status.sold",
+  "قيد التفاوض": "status.negotiation"
 }
 
-const listingTypeMap = {
-  للبيع: "For sale",
-  للإيجار: "For rent"
+const listingTypeKey = {
+  Sale: "listing.forSale",
+  Rent: "listing.forRent",
+  "للبيع": "listing.forSale",
+  "للإيجار": "listing.forRent"
 }
 
 const PropertyCard = ({ property, showCompare = false, selected = false, onToggleCompare, showWhatsapp = true }) => {
+  const { t, i18n } = useTranslation()
   const images = useMemo(() => {
+    if (property.media?.images && Array.isArray(property.media.images)) {
+      return property.media.images.map((item) => item?.url || item?.path || item).filter(Boolean)
+    }
     if (Array.isArray(property.media) && property.media.length) {
-      return property.media.map((item) => (item?.url ? item.url : item))
+      return property.media.map((item) => (item?.url ? item.url : item)).filter(Boolean)
     }
     return [property.image].filter(Boolean)
   }, [property])
@@ -32,14 +43,97 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
   const touchStartX = useRef(null)
   const touchDeltaX = useRef(0)
   const rawStatus = property.status || "Available"
-  const statusLabel = statusLabelMap[rawStatus] || rawStatus
+  const statusLabel = statusLabelKey[rawStatus] ? t(statusLabelKey[rawStatus]) : rawStatus
+  const statusClassKey = (() => {
+    if (["Available", "متوفر"].includes(rawStatus)) return "Available"
+    if (["Reserved", "محجوز"].includes(rawStatus)) return "Reserved"
+    if (["Sold", "مباع"].includes(rawStatus)) return "Sold"
+    if (["Negotiation", "قيد التفاوض"].includes(rawStatus)) return "Negotiation"
+    return "Available"
+  })()
   const rawListingType = property.listingType || property.listing_type || ""
-  const listingTypeKey = rawListingType.toLowerCase()
-  const listingTypeLabel =
-    listingTypeMap[rawListingType] ||
-    (listingTypeKey.includes("rent") ? "For rent" : listingTypeKey.includes("sale") ? "For sale" : "")
+  const listingTypeRaw = String(rawListingType)
+  const listingTypeLabel = listingTypeKey[listingTypeRaw]
+    ? t(listingTypeKey[listingTypeRaw])
+    : listingTypeRaw.toLowerCase().includes("rent")
+      ? t("listing.forRent")
+      : listingTypeRaw.toLowerCase().includes("sale")
+        ? t("listing.forSale")
+        : ""
+  const listingTypeInline = listingTypeKey[listingTypeRaw]
+    ? t(listingTypeKey[listingTypeRaw] === "listing.forSale" ? "listing.forSaleInline" : "listing.forRentInline")
+    : listingTypeRaw.toLowerCase().includes("rent")
+      ? t("listing.forRentInline")
+      : listingTypeRaw.toLowerCase().includes("sale")
+        ? t("listing.forSaleInline")
+        : ""
+  const locationLabel = (() => {
+    const raw = String(property.location || "")
+    if (!raw.includes("|")) return raw
+    const [ar, en] = raw.split("|").map((part) => part.trim())
+    return i18n.language === "ar" ? ar || en : en || ar
+  })()
+  const formatNumber = (value) => {
+    if (value === null || value === undefined || value === "") return ""
+    const number = Number(value)
+    if (Number.isNaN(number)) return value
+    return new Intl.NumberFormat(i18n.language === "ar" ? "ar" : "en").format(number)
+  }
+  const typeLabel = (() => {
+    const list = Array.isArray(property.propertyTypes) ? property.propertyTypes : []
+    const rawType = list[0] || property.propertyType || ""
+    const normalizedType = String(rawType)
+      .replace(/[^\p{L}\s]/gu, "")
+      .replace(/\s+/g, " ")
+      .trim()
+    const map = {
+      Apartment: "types.apartment",
+      Villa: "types.villa",
+      Land: "types.land",
+      Commercial: "types.commercial",
+      Office: "types.office",
+      Duplex: "types.duplex",
+      "شقة": "types.apartment",
+      "فيلا": "types.villa",
+      "أرض": "types.land",
+      "تجاري": "types.commercial",
+      "مكتب": "types.office",
+      "دوبلكس": "types.duplex"
+    }
+    const key = map[rawType] || map[normalizedType]
+    return key ? t(key) : normalizedType || rawType
+  })()
+  const viewSuffix = (() => {
+    const features = Array.isArray(property.specs?.features) ? property.specs.features : []
+    const normalized = features.map((item) => String(item).toLowerCase())
+    const hasSea = normalized.some((item) => item.includes("sea") || item.includes("بحر"))
+    const hasMountain = normalized.some((item) => item.includes("mountain") || item.includes("جبل"))
+    if (hasSea && hasMountain) return t("listing.viewSeaMountain")
+    if (hasSea) return t("listing.viewSea")
+    if (hasMountain) return t("listing.viewMountain")
+    return ""
+  })()
+  const buildTitle = () => {
+    const areaValue = formatNumber(property.area)
+    const locationValue = locationLabel || property.location || ""
+    if (!areaValue || !typeLabel || !listingTypeInline || !locationValue) return ""
+    return t("listing.cardTitle", {
+      area: areaValue,
+      type: typeLabel,
+      listingType: listingTypeInline,
+      location: locationValue,
+      view: viewSuffix
+    })
+  }
+  const cardTitle = (() => {
+    const autoTitle = buildTitle()
+    if (autoTitle) return autoTitle
+    const descriptions = property.specs?.descriptions || {}
+    if (i18n.language === "ar") return descriptions.ar || property.title || ""
+    return descriptions.en || property.title || ""
+  })()
   const whatsappMessage = encodeURIComponent(
-    `Hi AS.Properties, I'm interested in ${property.title}.`
+    `Hi AS.Properties, I'm interested in ${cardTitle || property.title}.`
   )
   const whatsappLink = `https://wa.me/96171115980?text=${whatsappMessage}`
 
@@ -73,7 +167,7 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
       >
         <img
           src={activeImage}
-          alt={property.title}
+          alt={cardTitle}
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           loading="lazy"
         />
@@ -86,15 +180,15 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
               onToggleCompare?.(property.id)
             }}
           >
-            {selected ? "Compared" : "Compare"}
+            {selected ? t("listing.compared") : t("listing.compare")}
           </button>
         ) : null}
         {property.hotDeal ? (
           <div className="absolute top-4 right-4 rounded-full bg-brand-gold px-3 py-1 text-xs font-semibold text-brand-charcoal shadow-lg">
-            Hot deal
+            {t("listing.hotDeal")}
           </div>
         ) : null}
-        <div className={`badge absolute left-4 top-4 ${statusClass[statusLabel] || "badge-available"}`}>
+        <div className={`badge absolute left-4 top-4 ${statusClass[statusClassKey] || "badge-available"}`}>
           {statusLabel}
         </div>
         {listingTypeLabel ? (
@@ -112,11 +206,11 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
               window.open(whatsappLink, "_blank", "noopener,noreferrer")
             }}
           >
-            WhatsApp
+            {t("listing.whatsapp")}
           </button>
         ) : null}
         <div className="absolute bottom-4 left-4 rounded-full bg-brand-charcoal/80 px-3 py-1 text-xs text-white">
-          {property.views} views
+          {formatNumber(property.views)} {t("listing.views")}
         </div>
         {images.length > 1 ? (
           <div className="absolute bottom-4 right-16 flex items-center gap-1 rounded-full bg-white/80 px-2 py-1 text-[10px]">
@@ -136,15 +230,15 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
         ) : null}
       </div>
       <div className="space-y-2 p-5">
-        <div className="text-xs uppercase tracking-[0.2em] text-brand-slate">{property.location}</div>
-        <h3 className="text-lg font-semibold text-brand-charcoal">{property.title}</h3>
+        <div className="text-xs uppercase tracking-[0.2em] text-brand-slate">{locationLabel || property.location}</div>
+        <h3 className="text-lg font-semibold text-brand-charcoal">{cardTitle}</h3>
         <div className="text-xl font-semibold text-brand-navy">
-          {property.currency} {property.price.toLocaleString()}
+          {property.currency} {formatNumber(property.price)}
         </div>
         <div className="flex flex-wrap gap-3 text-xs text-brand-slate">
-          <span>{property.rooms} rooms</span>
-          <span>{property.baths} baths</span>
-          <span>{property.area} sqm</span>
+          <span>{formatNumber(property.rooms)} {t("listing.rooms")}</span>
+          <span>{formatNumber(property.baths)} {t("listing.baths")}</span>
+          <span>{formatNumber(property.area)} {t("listing.area")}</span>
         </div>
       </div>
     </Link>

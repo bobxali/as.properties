@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import SearchBar from "../components/SearchBar"
 import PropertyGrid from "../components/PropertyGrid"
 import MapPanel from "../components/MapPanel"
@@ -6,6 +7,7 @@ import { sampleProperties } from "../data/mock"
 import { api } from "../lib/api"
 
 const Listings = () => {
+  const { t } = useTranslation()
   const [filters, setFilters] = useState(null)
   const [compareIds, setCompareIds] = useState([])
   const [properties, setProperties] = useState(sampleProperties)
@@ -21,14 +23,17 @@ const Listings = () => {
           currency: item.currency || "USD",
           location: item.location || "Lebanon",
           listingType: item.listingType || item.listing_type || "",
+          propertyTypes: item.propertyTypes || item.property_types || [],
           rooms: Number(item.rooms || 0),
           baths: Number(item.baths || 0),
           area: Number(item.area || 0),
           status: item.status || "Available",
           views: Number(item.views || 0),
           hotDeal: Boolean(item.specs?.marketing?.hot),
-          media: Array.isArray(item.media) ? item.media : [],
+          media: item.media || [],
+          specs: item.specs || {},
           image:
+            (item.media?.images?.[0]?.url || item.media?.images?.[0]?.path) ||
             (Array.isArray(item.media) && (item.media[0]?.url || item.media[0])) ||
             "https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1200&auto=format&fit=crop"
         }))
@@ -71,7 +76,7 @@ const Listings = () => {
       <SearchBar onSearch={setFilters} />
       {compareIds.length ? (
         <div className="rounded-3xl border border-white/40 bg-white/80 p-4 text-sm text-brand-slate">
-          Comparing {compareIds.length} properties
+          {t("listings.comparing", { count: compareIds.length })}
           <div className="mt-3 flex flex-wrap gap-2">
             {properties
               .filter((property) => compareIds.includes(property.id))

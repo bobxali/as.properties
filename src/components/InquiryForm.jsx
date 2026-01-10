@@ -1,7 +1,9 @@
 import { useState } from "react"
+import { useLanguage } from "../hooks/useLanguage"
 import { api } from "../lib/api"
 
 const InquiryForm = ({ propertyTitle }) => {
+  const { t } = useLanguage()
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -19,36 +21,36 @@ const InquiryForm = ({ propertyTitle }) => {
   const handleSubmit = async (event) => {
     event.preventDefault()
     await api.saveInquiry({ ...form, property: propertyTitle, status: "New", createdAt: new Date().toISOString() })
-    setStatus("Inquiry sent. We will contact you shortly.")
+    setStatus(t("inquiry.sent"))
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-white/40 bg-white/80 p-6">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Send inquiry</div>
+      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("inquiry.title")}</div>
       <input
         className="w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
-        placeholder="Full name"
+        placeholder={t("inquiry.name")}
         value={form.name}
         onChange={(event) => handleChange("name", event.target.value)}
         required
       />
       <input
         className="w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
-        placeholder="Phone"
+        placeholder={t("inquiry.phone")}
         value={form.phone}
         onChange={(event) => handleChange("phone", event.target.value)}
         required
       />
       <input
         className="w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
-        placeholder="Email"
+        placeholder={t("inquiry.email")}
         value={form.email}
         onChange={(event) => handleChange("email", event.target.value)}
       />
       <textarea
         className="w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
         rows="3"
-        placeholder="Message"
+        placeholder={t("inquiry.message")}
         value={form.message}
         onChange={(event) => handleChange("message", event.target.value)}
       />
@@ -57,9 +59,9 @@ const InquiryForm = ({ propertyTitle }) => {
         value={form.preferredContact}
         onChange={(event) => handleChange("preferredContact", event.target.value)}
       >
-        <option>WhatsApp</option>
-        <option>Call</option>
-        <option>Email</option>
+        <option>{t("listing.whatsapp")}</option>
+        <option>{t("inquiry.preferredCall")}</option>
+        <option>{t("inquiry.preferredEmail")}</option>
       </select>
       <input
         type="datetime-local"
@@ -68,7 +70,7 @@ const InquiryForm = ({ propertyTitle }) => {
         onChange={(event) => handleChange("appointment", event.target.value)}
       />
       <button className="w-full rounded-2xl bg-brand-navy px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white">
-        Submit inquiry
+        {t("inquiry.submit")}
       </button>
       {status ? <div className="text-xs text-brand-navy">{status}</div> : null}
     </form>

@@ -10,6 +10,7 @@ const Layout = ({ children }) => {
 
   useEffect(() => {
     document.documentElement.dir = dir
+    document.body.classList.toggle("rtl", dir === "rtl")
   }, [dir])
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useLanguage } from "../hooks/useLanguage"
+import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { api } from "../lib/api"
 import { supabase } from "../lib/supabase"
 import StepIndicator from "../components/forms/StepIndicator"
@@ -7,23 +8,31 @@ import AddableSelect from "../components/forms/AddableSelect"
 import AddableCheckboxGroup from "../components/forms/AddableCheckboxGroup"
 import { useCustomOptions } from "../hooks/useCustomOptions"
 
-const steps = [
-  "Basic Info",
-  "Details",
-  "Amenities",
-  "Pricing",
-  "Media",
-  "Contact",
-  "Description"
-]
-
 const AdminWizard = () => {
+  const { t } = useLanguage()
   const location = useLocation()
   const navigate = useNavigate()
+  const { id } = useParams()
+  const isEditing = Boolean(id)
+  const steps = useMemo(
+    () => [
+      t("admin.wizard.stepBasic"),
+      t("admin.wizard.stepDetails"),
+      t("admin.wizard.stepAmenities"),
+      t("admin.wizard.stepPricing"),
+      t("admin.wizard.stepMedia"),
+      t("admin.wizard.stepContact"),
+      t("admin.wizard.stepDescription")
+    ],
+    [t]
+  )
   const [step, setStep] = useState(0)
   const [lastAddress, setLastAddress] = useState("")
   const [mediaItems, setMediaItems] = useState([])
+  const [loadedMedia, setLoadedMedia] = useState(null)
+  const [mediaDirty, setMediaDirty] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [dragId, setDragId] = useState(null)
   const [toast, setToast] = useState(null)
   const toastTimer = useRef(null)
   const [form, setForm] = useState({
@@ -80,9 +89,31 @@ const AdminWizard = () => {
     keywords: [],
     slugAuto: true,
     slug: "",
+    storageFolder: "",
     notes: ""
   })
   const [draftSaved, setDraftSaved] = useState(false)
+
+  const normalizeMedia = (media) => {
+    if (!media) return { images: [], videos: [], tours: [] }
+    if (Array.isArray(media)) {
+      return { images: media, videos: [], tours: [] }
+    }
+    return {
+      images: Array.isArray(media.images) ? media.images : [],
+      videos: Array.isArray(media.videos) ? media.videos : [],
+      tours: Array.isArray(media.tours) ? media.tours : []
+    }
+  }
+
+  const getPreviewUrl = async (path, url) => {
+    if (url) return url
+    if (!supabase || !path) return ""
+    const { data } = supabase.storage.from("property-images").getPublicUrl(path)
+    if (data?.publicUrl) return data.publicUrl
+    const signed = await supabase.storage.from("property-images").createSignedUrl(path, 3600)
+    return signed?.data?.signedUrl || ""
+  }
 
   const propertyTypes = useCustomOptions("property_type", ["شقة 🏢", "فيلا 🏡", "أرض 🏞️", "محل تجاري 🏪", "مكتب 🏢", "دوبلكس 🏘️"])
   const listingTypes = useCustomOptions("listing_type", ["للبيع", "للإيجار"])
@@ -235,10 +266,109 @@ const AdminWizard = () => {
   }, [])
 
   useEffect(() => {
+    if (!isEditing || !supabase) return
+    let isMounted = true
+    const loadProperty = async () => {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("id", id)
+        .single()
+      if (error || !data || !isMounted) return
+      const specs = data.specs || {}
+      const media = normalizeMedia(data.media)
+      const images = await Promise.all(
+        (media.images || []).map(async (image, index) => {
+          const preview = await getPreviewUrl(image.path, image.url)
+          return {
+            id: `existing-${index}`,
+            name: image.path ? image.path.split("/").slice(-1)[0] : `image-${index + 1}`,
+            preview,
+            url: image.url || preview,
+            path: image.path || "",
+            featured: Boolean(image.isCover),
+            isCover: Boolean(image.isCover),
+            caption: image.caption || "",
+            tags: Array.isArray(image.tags) ? image.tags : [],
+            existing: true
+          }
+        })
+      )
+      setLoadedMedia({
+        images: images.map((item) => ({
+          path: item.path,
+          url: item.url,
+          caption: item.caption,
+          tags: item.tags,
+          isCover: item.isCover
+        })),
+        videos: media.videos || [],
+        tours: media.tours || []
+      })
+      setMediaItems(images)
+      setMediaDirty(false)
+      setForm((prev) => ({
+        ...prev,
+        propertyTypes: data.property_types || [],
+        listingType: data.listing_type || "",
+        title: data.title || "",
+        location: data.location || "",
+        locations: data.locations || [],
+        address: specs.address || "",
+        ownershipDoc: specs.ownershipDoc || "",
+        area: data.area || prev.area,
+        floor: specs.floor ?? prev.floor,
+        floorsTotal: specs.floorsTotal ?? prev.floorsTotal,
+        rooms: data.rooms ?? prev.rooms,
+        baths: data.baths ?? prev.baths,
+        balconies: specs.balconies ?? prev.balconies,
+        condition: specs.condition || prev.condition,
+        yearBuilt: specs.yearBuilt || prev.yearBuilt,
+        customFields: data.custom_fields || prev.customFields,
+        marketing: specs.marketing || prev.marketing,
+        customBadges: specs.customBadges || prev.customBadges,
+        amenities: specs.amenities || prev.amenities,
+        kitchen: specs.kitchen || prev.kitchen,
+        finishing: specs.finishing || prev.finishing,
+        waterSources: specs.waterSources || prev.waterSources,
+        features: specs.features || prev.features,
+        price: data.price ?? prev.price,
+        currency: data.currency || prev.currency,
+        paymentTerms: specs.paymentTerms || prev.paymentTerms,
+        installment: specs.installment || false,
+        downPayment: specs.downPayment ?? prev.downPayment,
+        installments: specs.installments ?? prev.installments,
+        monthlyPayment: specs.monthlyPayment ?? prev.monthlyPayment,
+        negotiable: specs.negotiable || false,
+        media: data.media || prev.media,
+        videoLinks: specs.videoLinks || prev.videoLinks,
+        tourLinks: specs.tourLinks || prev.tourLinks,
+        whatsapp: specs.whatsapp || prev.whatsapp,
+        phones: specs.phones || prev.phones,
+        emails: specs.emails || prev.emails,
+        agent: specs.agent || prev.agent,
+        status: data.status || prev.status,
+        descriptionAr: specs.descriptions?.ar || prev.descriptionAr,
+        descriptionEn: specs.descriptions?.en || prev.descriptionEn,
+        descriptionFr: specs.descriptions?.fr || prev.descriptionFr,
+        metaTitle: specs.meta?.title || prev.metaTitle,
+        metaDescription: specs.meta?.description || prev.metaDescription,
+        keywords: specs.meta?.keywords || prev.keywords,
+        slug: specs.meta?.slug || prev.slug,
+        storageFolder: specs.meta?.storage_folder || prev.storageFolder
+      }))
+    }
+    loadProperty()
+    return () => {
+      isMounted = false
+    }
+  }, [id, isEditing])
+
+  useEffect(() => {
     const stateData = location.state?.property
-    if (stateData) {
-      const normalizedMedia = Array.isArray(stateData.media) ? stateData.media : []
-      const existingItems = normalizedMedia.map((item, index) => {
+    if (stateData && !isEditing) {
+      const normalizedMedia = normalizeMedia(stateData.media)
+      const existingItems = (normalizedMedia.images || []).map((item, index) => {
         if (typeof item === "string") {
           return {
             id: `existing-${index}`,
@@ -260,6 +390,8 @@ const AdminWizard = () => {
         }
       })
       setMediaItems(existingItems)
+      setLoadedMedia(normalizedMedia)
+      setMediaDirty(false)
       setForm((prev) => ({
         ...prev,
         ...stateData,
@@ -269,13 +401,14 @@ const AdminWizard = () => {
   }, [location.state])
 
   useEffect(() => {
+    if (isEditing) return
     const interval = setInterval(() => {
       api.saveDraft({ ...form, updatedAt: new Date().toISOString() })
       setDraftSaved(true)
       setTimeout(() => setDraftSaved(false), 1500)
     }, 30000)
     return () => clearInterval(interval)
-  }, [form])
+  }, [form, isEditing])
 
   useEffect(() => {
     const handler = (event) => {
@@ -325,6 +458,21 @@ const AdminWizard = () => {
     }))
     setMediaItems((prev) => [...prev, ...nextItems])
     handleChange("media", [...form.media, ...nextItems.map((item) => item.preview)])
+    setMediaDirty(true)
+  }
+
+  const moveMediaItem = (fromId, toId) => {
+    if (!fromId || !toId || fromId === toId) return
+    setMediaItems((prev) => {
+      const fromIndex = prev.findIndex((entry) => entry.id === fromId)
+      const toIndex = prev.findIndex((entry) => entry.id === toId)
+      if (fromIndex === -1 || toIndex === -1) return prev
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      return next
+    })
+    setMediaDirty(true)
   }
 
   const removeMediaItem = (id) => {
@@ -337,14 +485,16 @@ const AdminWizard = () => {
       handleChange("media", next.map((entry) => entry.preview))
       return next
     })
+    setMediaDirty(true)
   }
 
   const setFeatured = (id) => {
     setMediaItems((prev) => {
-      const next = prev.map((entry) => ({ ...entry, featured: entry.id === id }))
+      const next = prev.map((entry) => ({ ...entry, featured: entry.id === id, isCover: entry.id === id }))
       handleChange("media", next.map((entry) => entry.preview))
       return next
     })
+    setMediaDirty(true)
   }
 
   const getPrimaryLocation = () => form.location || form.locations.join(", ") || "Lebanon"
@@ -626,15 +776,30 @@ const AdminWizard = () => {
   }, [form])
 
   const uploadMediaFiles = async () => {
-    if (!supabase || mediaItems.length === 0) {
-      return form.media
-    }
-    const uploaded = []
     const folderBase = form.slug || `listing-${Date.now()}`
     const folderSafe = folderBase.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "")
+    const images = []
+    if (!supabase || mediaItems.length === 0) {
+      mediaItems.forEach((item) => {
+        images.push({
+          path: item.path || "",
+          url: item.url || item.preview || "",
+          caption: item.caption || "",
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          isCover: Boolean(item.featured || item.isCover)
+        })
+      })
+      return { images, folderSafe }
+    }
     for (const item of mediaItems) {
-      if (item.existing && item.url) {
-        uploaded.push({ url: item.url, path: item.path })
+      if (item.existing && (item.url || item.path)) {
+        images.push({
+          path: item.path || "",
+          url: item.url || item.preview || "",
+          caption: item.caption || "",
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          isCover: Boolean(item.featured || item.isCover)
+        })
         continue
       }
       if (!item.file) continue
@@ -645,31 +810,107 @@ const AdminWizard = () => {
         throw new Error(`Upload failed for ${item.name}`)
       }
       const { data } = supabase.storage.from("property-images").getPublicUrl(path)
-      uploaded.push({ url: data.publicUrl, path })
+      images.push({
+        path,
+        url: data?.publicUrl || "",
+        caption: item.caption || "",
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        isCover: Boolean(item.featured || item.isCover)
+      })
     }
-    return { uploaded, folderSafe }
+    return { images, folderSafe }
   }
 
   const handlePublish = async () => {
     try {
-      setUploading(true)
-      const uploadResult = await uploadMediaFiles()
-      const mediaUrls = Array.isArray(uploadResult) ? uploadResult : uploadResult.uploaded
-      const storageFolder = Array.isArray(uploadResult) ? "" : uploadResult.folderSafe
-      const featured = mediaItems.find((item) => item.featured)
-      const payload = {
-        ...form,
-        media: mediaUrls.length ? mediaUrls : form.media,
-        featured_image: featured ? mediaUrls[mediaItems.indexOf(featured)]?.url : null,
-        views: Math.floor(120 + Math.random() * 330),
-        storageFolder,
-        createdAt: new Date().toISOString()
+      if (!supabase) {
+        showToast("error", t("admin.wizard.supabaseMissing"))
+        return
       }
-        await api.saveProperty(payload)
-        showToast("success", "Listing published successfully.")
+      setUploading(true)
+        const uploadResult = await uploadMediaFiles()
+        const mediaPayload = mediaDirty
+          ? {
+              images: uploadResult.images,
+              videos: form.videoLinks.filter(Boolean).map((url) => ({ url })),
+              tours: form.tourLinks.filter(Boolean).map((url) => ({ url }))
+            }
+          : {
+              ...(loadedMedia || { images: uploadResult.images }),
+              videos: form.videoLinks.filter(Boolean).map((url) => ({ url })),
+              tours: form.tourLinks.filter(Boolean).map((url) => ({ url }))
+            }
+        const featuredEntry = mediaPayload.images?.find((item) => item?.isCover)
+        const featuredUrl = featuredEntry?.url || featuredEntry?.path || ""
+        const record = {
+          title: form.title,
+          listing_type: form.listingType || null,
+          location: form.location || null,
+          locations: form.locations || [],
+          property_types: form.propertyTypes || [],
+          price: form.price || null,
+          currency: form.currency || null,
+          rooms: form.rooms || null,
+          baths: form.baths || null,
+          area: form.area || null,
+          status: form.status || null,
+          views: isEditing ? undefined : Math.floor(120 + Math.random() * 330),
+          media: mediaPayload,
+          custom_fields: form.customFields || [],
+          specs: {
+            address: form.address || null,
+            ownershipDoc: form.ownershipDoc || null,
+            floor: form.floor ?? null,
+            floorsTotal: form.floorsTotal ?? null,
+            balconies: form.balconies ?? null,
+            condition: form.condition || null,
+            yearBuilt: form.yearBuilt || null,
+            marketing: form.marketing || null,
+            customBadges: form.customBadges || [],
+            amenities: form.amenities || [],
+            kitchen: form.kitchen || null,
+            finishing: form.finishing || null,
+            waterSources: form.waterSources || [],
+            features: form.features || [],
+            paymentTerms: form.paymentTerms || [],
+            installment: form.installment || false,
+            downPayment: form.downPayment || null,
+            installments: form.installments || null,
+            monthlyPayment: form.monthlyPayment || null,
+            negotiable: form.negotiable || false,
+            videoLinks: form.videoLinks || [],
+            tourLinks: form.tourLinks || [],
+            whatsapp: form.whatsapp || null,
+            phones: form.phones || [],
+            emails: form.emails || [],
+            agent: form.agent || null,
+            descriptions: {
+              ar: form.descriptionAr || "",
+              en: form.descriptionEn || "",
+              fr: form.descriptionFr || ""
+            },
+            meta: {
+              title: form.metaTitle || "",
+              description: form.metaDescription || "",
+              keywords: form.keywords || [],
+              slug: form.slug || "",
+              storage_folder: isEditing ? form.storageFolder || "" : uploadResult.folderSafe || ""
+            },
+            featured_image: featuredUrl || null
+          }
+        }
+        if (isEditing) {
+          delete record.views
+          const { error } = await supabase.from("properties").update(record).eq("id", id)
+          if (error) throw error
+        } else {
+          const { error } = await supabase.from("properties").insert([record]).select().single()
+          if (error) throw error
+        }
+        showToast("success", isEditing ? t("admin.wizard.successUpdate") : t("admin.wizard.successPublish"))
         navigate("/admin")
       } catch (error) {
-        showToast("error", error.message || "Publish failed. Check storage bucket and permissions.")
+        showToast("error", error.message || t("admin.wizard.errorPublish"))
       } finally {
       setUploading(false)
     }
@@ -700,7 +941,7 @@ const AdminWizard = () => {
             onClick={handlePublish}
             disabled={uploading}
           >
-            {uploading ? "Publishing..." : "Publish"}
+            {uploading ? t("admin.wizard.publishing") : t("admin.wizard.publish")}
           </button>
         </div>
       </div>
@@ -1052,15 +1293,25 @@ const AdminWizard = () => {
                     className="rounded-2xl bg-brand-navy px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
                     onClick={() => document.getElementById("media-upload")?.click()}
                   >
-                    Upload photos
+                    {t("admin.wizard.mediaUpload")}
                   </button>
                 </div>
               </div>
-              <div className="text-xs text-brand-slate">Maximum 3 photos.</div>
+              <div className="text-xs text-brand-slate">{t("admin.wizard.mediaMax")}</div>
               {mediaItems.length ? (
                 <div className="grid gap-4 md:grid-cols-3">
                   {mediaItems.map((item) => (
-                    <div key={item.id} className="relative overflow-hidden rounded-2xl border border-white/40 bg-white/80">
+                    <div
+                      key={item.id}
+                      className="relative cursor-move overflow-hidden rounded-2xl border border-white/40 bg-white/80"
+                      draggable
+                      onDragStart={() => setDragId(item.id)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => {
+                        moveMediaItem(dragId, item.id)
+                        setDragId(null)
+                      }}
+                    >
                       <img src={item.preview} alt={item.name} className="h-36 w-full object-cover" />
                       <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-brand-slate">
                         <button
@@ -1068,14 +1319,14 @@ const AdminWizard = () => {
                           className="rounded-full border border-brand-gold px-3 py-1"
                           onClick={() => setFeatured(item.id)}
                         >
-                          {item.featured ? "Featured" : "Set featured"}
+                          {item.featured ? t("admin.wizard.mediaFeatured") : t("admin.wizard.mediaSetFeatured")}
                         </button>
                         <button
                           type="button"
                           className="rounded-full border border-red-400 px-3 py-1 text-red-500"
                           onClick={() => removeMediaItem(item.id)}
                         >
-                          Remove
+                          {t("admin.wizard.mediaRemove")}
                         </button>
                       </div>
                     </div>
@@ -1083,7 +1334,7 @@ const AdminWizard = () => {
                 </div>
               ) : null}
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Video links</label>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.videoLinks")}</label>
                 {form.videoLinks.map((link, index) => (
                   <input
                     key={`video-${index}`}
@@ -1101,11 +1352,11 @@ const AdminWizard = () => {
                   className="mt-2 rounded-2xl border border-brand-gold px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy"
                   onClick={() => handleChange("videoLinks", [...form.videoLinks, ""]) }
                 >
-                  Add more video links
+                  {t("admin.wizard.videoAdd")}
                 </button>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">360 tour links</label>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.tourLinks")}</label>
                 {form.tourLinks.map((link, index) => (
                   <input
                     key={`tour-${index}`}
@@ -1123,7 +1374,7 @@ const AdminWizard = () => {
                   className="mt-2 rounded-2xl border border-brand-gold px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy"
                   onClick={() => handleChange("tourLinks", [...form.tourLinks, ""]) }
                 >
-                  Add more tour links
+                  {t("admin.wizard.tourAdd")}
                 </button>
               </div>
             </div>
@@ -1131,7 +1382,7 @@ const AdminWizard = () => {
 
           {step === 5 ? (
             <div className="space-y-6 rounded-3xl border border-white/40 bg-white/80 p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Step 6: Contact & status</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.contactTitle")}</div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">WhatsApp</label>
@@ -1215,7 +1466,7 @@ const AdminWizard = () => {
 
           {step === 6 ? (
             <div className="space-y-6 rounded-3xl border border-white/40 bg-white/80 p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Step 7: Description & SEO</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.descriptionTitle")}</div>
               <div>
                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Description (Arabic)</label>
                 <div className="mt-2 flex items-center gap-2 text-sm text-brand-slate">
@@ -1224,7 +1475,7 @@ const AdminWizard = () => {
                     checked={form.descriptionAutoAr}
                     onChange={(event) => handleChange("descriptionAutoAr", event.target.checked)}
                   />
-                  Auto-generate from details
+                  {t("admin.wizard.autoGenerate")}
                 </div>
                 <textarea
                   className="mt-2 w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
@@ -1240,7 +1491,7 @@ const AdminWizard = () => {
                   className="ml-2 rounded-full border border-brand-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-navy"
                   onClick={() => handleChange("descriptionEn", form.descriptionAr)}
                 >
-                  Copy Arabic
+                  {t("admin.wizard.copyArabic")}
                 </button>
                 <div className="mt-2 flex items-center gap-2 text-sm text-brand-slate">
                   <input
@@ -1248,7 +1499,7 @@ const AdminWizard = () => {
                     checked={form.descriptionAutoEn}
                     onChange={(event) => handleChange("descriptionAutoEn", event.target.checked)}
                   />
-                  Auto-generate from details
+                  {t("admin.wizard.autoGenerate")}
                 </div>
                 <textarea
                   className="mt-2 w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
@@ -1264,7 +1515,7 @@ const AdminWizard = () => {
                   className="ml-2 rounded-full border border-brand-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-navy"
                   onClick={() => handleChange("descriptionFr", form.descriptionAr)}
                 >
-                  Copy Arabic
+                  {t("admin.wizard.copyArabic")}
                 </button>
                 <div className="mt-2 flex items-center gap-2 text-sm text-brand-slate">
                   <input
@@ -1272,7 +1523,7 @@ const AdminWizard = () => {
                     checked={form.descriptionAutoFr}
                     onChange={(event) => handleChange("descriptionAutoFr", event.target.checked)}
                   />
-                  Auto-generate from details
+                  {t("admin.wizard.autoGenerate")}
                 </div>
                 <textarea
                   className="mt-2 w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
@@ -1283,7 +1534,7 @@ const AdminWizard = () => {
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Meta title</label>
+                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.metaTitle")}</label>
                   <input
                     className="mt-2 w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
                     value={form.metaTitle}
@@ -1299,7 +1550,7 @@ const AdminWizard = () => {
                   </label>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">URL slug</label>
+                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.slug")}</label>
                   <input
                     className="mt-2 w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
                     value={form.slug}
@@ -1316,7 +1567,7 @@ const AdminWizard = () => {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Meta description</label>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.metaDescription")}</label>
                 <textarea
                   className="mt-2 w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
                   rows="3"
@@ -1333,7 +1584,7 @@ const AdminWizard = () => {
                 </label>
               </div>
               <div className="rounded-2xl border border-white/40 bg-white/70 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Custom fields</div>
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.customFields")}</div>
                 <div className="mt-3 space-y-3">
                   {form.customFields.map((field, index) => (
                     <div key={`custom-${index}`} className="grid gap-2 md:grid-cols-[1fr,1fr,auto]">
@@ -1375,7 +1626,7 @@ const AdminWizard = () => {
                     className="rounded-2xl border border-brand-gold px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy"
                     onClick={() => handleChange("customFields", [...form.customFields, { label: "", value: "", display: true }])}
                   >
-                    + Add Custom Field
+                    {t("admin.wizard.addCustomField")}
                   </button>
                 </div>
               </div>
@@ -1388,7 +1639,7 @@ const AdminWizard = () => {
               disabled={step === 0}
               onClick={() => setStep((prev) => Math.max(0, prev - 1))}
             >
-              Previous
+              {t("admin.wizard.previous")}
             </button>
             <button
               className="rounded-full bg-brand-navy px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
@@ -1400,27 +1651,27 @@ const AdminWizard = () => {
                 }
               }}
             >
-              {step === steps.length - 1 ? "Finish" : "Next step"}
+              {step === steps.length - 1 ? t("admin.wizard.finish") : t("admin.wizard.next")}
             </button>
           </div>
         </div>
 
         <div className="space-y-4">
           <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Live preview</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.previewTitle")}</div>
             <h3 className="mt-3 text-xl font-semibold text-brand-charcoal">{preview.title}</h3>
             <div className="mt-2 text-2xl font-semibold text-brand-navy">{preview.price}</div>
             <div className="mt-2 text-sm text-brand-slate">{preview.location}</div>
             <div className="mt-4 rounded-full bg-brand-charcoal/10 px-3 py-1 text-xs text-brand-charcoal">
-              Status: {preview.status}
+              {t("admin.wizard.statusLabel")} {preview.status}
             </div>
           </div>
           <div className="rounded-3xl border border-white/40 bg-white/80 p-6 text-sm text-brand-slate">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Validation tips</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.wizard.validationTips")}</div>
             <ul className="mt-3 list-disc pl-4">
-              <li>Required fields marked with a red asterisk in production.</li>
-              <li>Use market price ranges to improve conversions.</li>
-              <li>Auto-saved every 30 seconds.</li>
+              <li>{t("admin.wizard.tipRequired")}</li>
+              <li>{t("admin.wizard.tipPrice")}</li>
+              <li>{t("admin.wizard.tipAutosave")}</li>
             </ul>
           </div>
         </div>

@@ -84,28 +84,31 @@ body {
 .badge {
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .badge-available {
-  background: rgba(16, 185, 129, 0.15);
-  color: #047857;
+  background: rgba(16, 185, 129, 0.28);
+  color: #065f46;
 }
 
 .badge-reserved {
-  background: rgba(251, 191, 36, 0.2);
-  color: #b45309;
+  background: rgba(251, 191, 36, 0.32);
+  color: #92400e;
 }
 
 .badge-sold {
-  background: rgba(248, 113, 113, 0.2);
-  color: #b91c1c;
+  background: rgba(248, 113, 113, 0.3);
+  color: #991b1b;
 }
 
 .badge-negotiation {
-  background: rgba(96, 165, 250, 0.2);
-  color: #1d4ed8;
+  background: rgba(96, 165, 250, 0.3);
+  color: #1e40af;
 }
 
 .step-pill {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useLanguage } from "../hooks/useLanguage"
 import Hero from "../components/Hero"
 import SearchBar from "../components/SearchBar"
 import PropertyGrid from "../components/PropertyGrid"
@@ -8,6 +9,7 @@ import { sampleProperties } from "../data/mock"
 import { api } from "../lib/api"
 
 const Home = () => {
+  const { t } = useLanguage()
   const [properties, setProperties] = useState(sampleProperties)
 
   useEffect(() => {
@@ -21,14 +23,17 @@ const Home = () => {
           currency: item.currency || "USD",
           location: item.location || "Lebanon",
           listingType: item.listingType || item.listing_type || "",
+          propertyTypes: item.propertyTypes || item.property_types || [],
           rooms: Number(item.rooms || 0),
           baths: Number(item.baths || 0),
           area: Number(item.area || 0),
           status: item.status || "Available",
           views: Number(item.views || 0),
           hotDeal: Boolean(item.specs?.marketing?.hot),
-          media: Array.isArray(item.media) ? item.media : [],
+          media: item.media || [],
+          specs: item.specs || {},
           image:
+            (item.media?.images?.[0]?.url || item.media?.images?.[0]?.path) ||
             (Array.isArray(item.media) && (item.media[0]?.url || item.media[0])) ||
             "https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1200&auto=format&fit=crop"
         }))
@@ -46,9 +51,9 @@ const Home = () => {
         <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
           <div className="space-y-6">
             <SectionHeader
-              eyebrow="Featured"
-              title="Signature listings"
-              subtitle="Handpicked properties that define AS.Properties' luxury standard."
+              eyebrow={t("home.featuredEyebrow")}
+              title={t("home.featuredTitle")}
+              subtitle={t("home.featuredSubtitle")}
             />
             <PropertyGrid
               properties={properties.slice().sort((a, b) => Number(b.hotDeal) - Number(a.hotDeal))}
@@ -57,9 +62,9 @@ const Home = () => {
           </div>
           <div className="space-y-6">
             <SectionHeader
-              eyebrow="Live"
-              title="Map view"
-              subtitle="Track availability and micro-markets instantly."
+              eyebrow={t("home.mapEyebrow")}
+              title={t("home.mapTitle")}
+              subtitle={t("home.mapSubtitle")}
             />
             <MapPanel
               pins={properties.map((property, index) => ({
@@ -73,13 +78,13 @@ const Home = () => {
         </div>
         <div className="space-y-6">
           <SectionHeader
-            eyebrow="Social"
-            title="Instagram highlights"
-            subtitle="Curated snapshots from AS.Properties listings."
+            eyebrow={t("home.socialEyebrow")}
+            title={t("home.socialTitle")}
+            subtitle={t("home.socialSubtitle")}
             align="center"
           />
           <div className="text-center text-xs uppercase tracking-[0.3em] text-brand-slate">
-            Instagram: @as.properties.lb
+            {t("home.instagramLabel")}
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[

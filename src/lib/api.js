@@ -103,7 +103,7 @@ export const api = {
         area: payload.area || null,
         status: payload.status || null,
         views: payload.views || 0,
-        media: payload.media || [],
+        media: payload.media || {},
         custom_fields: payload.customFields || payload.custom_fields || [],
         specs: {
           address: payload.address || null,

@@ -1,5 +1,5 @@
-import { createContext, useContext, useMemo, useState } from "react"
-import { translations } from "../i18n/translations"
+import { createContext, useContext, useEffect, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 const LanguageContext = createContext(null)
 
@@ -10,15 +10,27 @@ const directionMap = {
 }
 
 export const LanguageProvider = ({ children }) => {
-  const [lang, setLang] = useState("en")
+  const { i18n } = useTranslation()
+  const lang = i18n.language || "en"
+  const fixedT = i18n.getFixedT("en")
   const value = useMemo(() => {
     const dir = directionMap[lang] || "ltr"
     return {
       lang,
       dir,
-      setLang,
-      t: translations[lang] || translations.en
+      setLang: (next) => i18n.changeLanguage(next),
+      t: fixedT
     }
+  }, [lang, i18n, fixedT])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("as_lang", lang)
+    } catch (error) {
+      // ignore storage errors
+    }
+    document.documentElement.lang = lang
+    document.documentElement.dir = directionMap[lang] || "ltr"
   }, [lang])
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>

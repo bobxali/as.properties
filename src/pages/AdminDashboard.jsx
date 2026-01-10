@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useLanguage } from "../hooks/useLanguage"
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts"
 import SectionHeader from "../components/SectionHeader"
 import StatCard from "../components/StatCard"
@@ -9,8 +10,10 @@ import { supabase } from "../lib/supabase"
 import { api } from "../lib/api"
 
 const AdminDashboard = () => {
+  const { t } = useLanguage()
   const colors = ["#1a237e", "#c9a45c", "#3f51b5", "#9aa0a6"]
   const navigate = useNavigate()
+  const logoSrc = "/as-logo.png"
   const [properties, setProperties] = useState([])
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
@@ -72,38 +75,49 @@ const AdminDashboard = () => {
         </div>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <SectionHeader
-          eyebrow="Admin"
-          title="Analytics Dashboard"
-          subtitle="Monitor performance, inquiries, and traffic sources in real time."
-        />
+        <div className="flex items-center gap-4">
+          <img
+            src={logoSrc}
+            alt="AS.Properties logo"
+            className="h-10 w-auto"
+            onError={(event) => {
+              event.currentTarget.src = "/logo.png"
+            }}
+          />
+          <span className="sr-only">AS.Properties</span>
+          <SectionHeader
+            eyebrow={t("admin.eyebrow")}
+            title={t("admin.title")}
+            subtitle={t("admin.subtitle")}
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <select className="rounded-2xl border border-white/40 bg-white/80 px-4 py-2 text-xs uppercase tracking-[0.2em] text-brand-slate">
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-            <option>All time</option>
+            <option>{t("admin.dateRange7")}</option>
+            <option>{t("admin.dateRange30")}</option>
+            <option>{t("admin.dateRangeAll")}</option>
           </select>
           <Link
             to="/admin/new"
             className="rounded-2xl bg-brand-navy px-5 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-white"
           >
-            + Add new listing
+            {t("admin.addListing")}
           </Link>
           <button
             className="rounded-2xl border border-brand-navy px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy"
             onClick={handleLogout}
           >
-            Sign out
+            {t("admin.signOut")}
           </button>
         </div>
       </div>
       <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Listings management</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.listingsTitle")}</div>
           <div className="flex flex-wrap items-center gap-2">
             <input
               className="rounded-2xl border border-white/40 bg-white/80 px-3 py-2 text-sm"
-              placeholder="Search listings..."
+              placeholder={t("admin.searchPlaceholder")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -112,14 +126,14 @@ const AdminDashboard = () => {
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
             >
-              <option>All</option>
+              <option>{t("admin.statusAll")}</option>
               <option>Available</option>
               <option>Reserved</option>
               <option>Sold</option>
               <option>Negotiation</option>
             </select>
             <button className="rounded-2xl border border-brand-gold px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy">
-              Export CSV
+              {t("admin.exportCsv")}
             </button>
           </div>
         </div>
@@ -127,12 +141,12 @@ const AdminDashboard = () => {
           <table className="w-full min-w-[720px] text-sm">
             <thead className="text-xs uppercase tracking-[0.2em] text-brand-slate">
               <tr className="border-b border-white/40">
-                <th className="py-2 text-left">Title</th>
-                <th className="py-2 text-left">Location</th>
-                <th className="py-2 text-left">Price</th>
-                <th className="py-2 text-left">Status</th>
-                <th className="py-2 text-left">Created</th>
-                <th className="py-2 text-left">Actions</th>
+                <th className="py-2 text-left">{t("admin.table.title")}</th>
+                <th className="py-2 text-left">{t("admin.table.location")}</th>
+                <th className="py-2 text-left">{t("admin.table.price")}</th>
+                <th className="py-2 text-left">{t("admin.table.status")}</th>
+                <th className="py-2 text-left">{t("admin.table.created")}</th>
+                <th className="py-2 text-left">{t("admin.table.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -152,9 +166,9 @@ const AdminDashboard = () => {
                       <div className="flex flex-wrap gap-2">
                         <button
                           className="rounded-full border border-brand-navy px-3 py-1 text-xs"
-                          onClick={() => navigate("/admin/new", { state: { property: item } })}
+                          onClick={() => navigate(`/admin/properties/${item.id}/edit`)}
                         >
-                          Edit
+                          {t("admin.actions.edit")}
                         </button>
                         <button
                           className="rounded-full border border-brand-gold px-3 py-1 text-xs"
@@ -174,21 +188,21 @@ const AdminDashboard = () => {
                             )
                           }}
                         >
-                          Duplicate
+                          {t("admin.actions.duplicate")}
                         </button>
                         <button
                           className="rounded-full border border-red-500 px-3 py-1 text-xs text-red-500"
                           onClick={async () => {
-                            if (!window.confirm("Delete this listing?")) return
+                            if (!window.confirm(t("admin.actions.confirmDelete"))) return
                             try {
                               await api.deleteProperty(item.id)
                               setProperties((prev) => prev.filter((row) => row.id !== item.id))
                             } catch (error) {
-                              showToast("error", error.message || "Delete failed. Check permissions.")
+                              showToast("error", error.message || t("admin.actions.deleteError"))
                             }
                           }}
                         >
-                          Delete
+                          {t("admin.actions.delete")}
                         </button>
                       </div>
                     </td>
@@ -197,7 +211,7 @@ const AdminDashboard = () => {
               ) : (
                 <tr>
                   <td colSpan="6" className="py-6 text-center text-brand-slate">
-                    No listings found yet.
+                    {t("admin.table.empty")}
                   </td>
                 </tr>
               )}
@@ -207,14 +221,14 @@ const AdminDashboard = () => {
       </div>
       <CustomOptionsManager />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total visitors" value={analyticsMock.totalVisitors.toLocaleString()} change="+12% vs last 30 days" />
-        <StatCard label="Unique visitors" value={analyticsMock.uniqueVisitors.toLocaleString()} change="+9%" />
-        <StatCard label="Page views" value={analyticsMock.pageViews.toLocaleString()} change="+18%" />
-        <StatCard label="Conversion rate" value={`${analyticsMock.conversionRate}%`} change="+0.4%" />
+        <StatCard label={t("admin.stats.totalVisitors")} value={analyticsMock.totalVisitors.toLocaleString()} change="+12% vs last 30 days" />
+        <StatCard label={t("admin.stats.uniqueVisitors")} value={analyticsMock.uniqueVisitors.toLocaleString()} change="+9%" />
+        <StatCard label={t("admin.stats.pageViews")} value={analyticsMock.pageViews.toLocaleString()} change="+18%" />
+        <StatCard label={t("admin.stats.conversion")} value={`${analyticsMock.conversionRate}%`} change="+0.4%" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Most viewed</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.mostViewed")}</div>
           <div className="mt-6 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsMock.viewsByProperty}>
@@ -227,7 +241,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Traffic sources</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.trafficSources")}</div>
           <div className="mt-6 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -244,7 +258,7 @@ const AdminDashboard = () => {
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Inquiries per property</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.inquiriesPerProperty")}</div>
           <div className="mt-4 space-y-3 text-sm">
             {analyticsMock.inquiriesByProperty.map((item) => (
               <div key={item.name} className="flex items-center justify-between">
@@ -255,7 +269,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Popular searches</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.popularSearches")}</div>
           <div className="mt-4 space-y-3 text-sm">
             {analyticsMock.popularSearches.map((item) => (
               <div key={item.label} className="flex items-center justify-between">
@@ -268,7 +282,7 @@ const AdminDashboard = () => {
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Latest inquiries</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.latestInquiries")}</div>
           <div className="mt-4 space-y-3">
             {inquiriesMock.map((inq) => (
               <div key={inq.id} className="flex items-center justify-between rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-sm">
@@ -282,7 +296,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Top listings</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.topListings")}</div>
           <div className="mt-4 space-y-3 text-sm">
             {sampleProperties.map((property) => (
               <div key={property.id} className="flex items-center justify-between">
@@ -297,7 +311,7 @@ const AdminDashboard = () => {
         </div>
       </div>
       <div className="rounded-3xl border border-white/40 bg-white/80 p-6">
-        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">Inquiry management</div>
+        <div className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-slate">{t("admin.stats.inquiryManagement")}</div>
         <div className="mt-4 space-y-3 text-sm">
           {inquiriesMock.map((inq) => (
             <div key={inq.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/40 bg-white/70 px-4 py-3">

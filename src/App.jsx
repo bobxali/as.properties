@@ -32,6 +32,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/properties/:id/edit"
+          element={
+            <ProtectedRoute>
+              <AdminWizard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Layout>
   )
