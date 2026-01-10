@@ -75,34 +75,82 @@ const PropertyDetail = () => {
     return fallbackGallery
   }, [property])
 
+  const splitBilingual = (value) => {
+    const raw = String(value || "")
+    if (!raw.includes("|")) return { ar: raw, en: "" }
+    const [ar, en] = raw.split("|").map((part) => part.trim())
+    return { ar: ar || en || "", en: en || ar || "" }
+  }
   const translateValue = (value) => {
+    const { ar, en } = splitBilingual(value)
+    if (i18n.language === "en" && en) return en
+    if (i18n.language === "ar" && ar) return ar
     const valueMap = {
       "O3U+O_ OœOrO\u0014Oñ": "values.ownershipGreen",
       "Green deed": "values.ownershipGreen",
+      "سند أخضر": "values.ownershipGreen",
       "O-O_USO®": "values.conditionRecent",
       "Recent": "values.conditionRecent",
+      "حديث": "values.conditionRecent",
+      "جديد": "values.conditionNew",
+      "قديمة": "values.conditionOld",
+      "قديم": "values.conditionOld",
+      "قيد الإنشاء": "values.conditionConstruction",
+      "يحتاج تجديد": "values.conditionRenovation",
       "OñO\u0015UŸO\"": "values.kitchenInstalled",
       "Installed": "values.kitchenInstalled",
+      "راكب": "values.kitchenInstalled",
+      "على طلبكم": "values.kitchenCustom",
       "O_USU,U^UŸO3": "values.finishingDeluxe",
       "Deluxe": "values.finishingDeluxe",
+      "ديلوكس": "values.finishingDeluxe",
+      "سوبر ديلوكس": "values.finishingSuperDeluxe",
+      "عادي": "values.finishingStandard",
       "O\"OÝOñ O\u0014OñO¦U^O\u0014OýUS": "values.waterArtesian",
       "Artesian well": "values.waterArtesian",
+      "بئر ارتوازي": "values.waterArtesian",
+      "مياه شبكة": "values.waterNetwork",
       "U.U^U,U? OrO\u0014Oæ": "values.amenityParking",
       "Private parking": "values.amenityParking",
+      "موقف خاص": "values.amenityParking",
+      "موقف مشترك": "values.amenitySharedParking",
       "U.OæO1O_": "values.amenityElevator",
       "Elevator": "values.amenityElevator",
+      "مصعد": "values.amenityElevator",
       "U.U^U,O_ UŸUØOñO\"O\u0014O­": "values.amenityGenerator",
       "Generator": "values.amenityGenerator",
+      "مولد كهرباء": "values.amenityGenerator",
+      "مولد": "values.amenityGenerator",
       "O¦UŸUSUSU?": "values.amenityAc",
       "A/C": "values.amenityAc",
+      "تكييف": "values.amenityAc",
+      "تدفئة مركزية": "values.amenityHeating",
       "O-OñO\u0014O3Oc": "values.amenitySecurity",
       "Security": "values.amenitySecurity",
+      "حراسة": "values.amenitySecurity",
+      "حديقة": "values.amenityGarden",
+      "مسبح": "values.amenityPool",
+      "نادي رياضي": "values.amenityGym",
+      "انترنت": "values.amenityInternet",
+      "انترنت/ألياف": "values.amenityInternet",
+      "مستودع": "values.amenityStorage",
+      "مولد": "values.amenityGenerator",
       "OOúU,O\u0014U,Oc OªO\"U,": "values.featureMountainView",
       "Mountain view": "values.featureMountainView",
+      "إطلالة جبل": "values.featureMountainView",
+      "إطلالة بحر": "values.featureSeaView",
+      "إطلالة شمسية": "values.featureSunnyView",
+      "طاقة شمسية": "values.featureSolar",
+      "شبابيك مزدوجة": "values.featureDoubleGlazed",
+      "باب مصفح": "values.featureArmoredDoor",
       "UŸO\u0014O'": "values.paymentCash",
-      "Cash": "values.paymentCash"
+      "Cash": "values.paymentCash",
+      "كاش": "values.paymentCash",
+      "ثلاثة أشهر سلف": "values.paymentThreeMonthsAdvance",
+      "دفعات شهرية": "values.paymentInstallments"
     }
-    const key = valueMap[value]
+    const trimmed = String(value || "").trim()
+    const key = valueMap[trimmed]
     return key ? t(key) : value
   }
 
