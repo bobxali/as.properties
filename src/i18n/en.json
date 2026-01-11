@@ -133,7 +133,8 @@
     "preferredEmail": "Email",
     "appointment": "Appointment date",
     "submit": "Send inquiry",
-    "sent": "Inquiry sent. We will contact you shortly."
+    "sent": "Inquiry sent. We will contact you shortly.",
+    "savedLocal": "Saved locally (Supabase not reachable)."
   },
   "admin": {
     "eyebrow": "Admin",

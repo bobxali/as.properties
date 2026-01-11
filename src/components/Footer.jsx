@@ -1,4 +1,5 @@
-﻿import { useLanguage } from "../hooks/useLanguage"
+﻿import { Link } from "react-router-dom"
+import { useLanguage } from "../hooks/useLanguage"
 
 const Footer = () => {
   const { t } = useLanguage()
@@ -61,6 +62,12 @@ const Footer = () => {
             >
               {t("footer.whatsapp")}
             </a>
+            <Link
+              to="/invest-in-lebanon"
+              className="rounded-full border border-white/20 px-4 py-2"
+            >
+              Invest in Lebanon
+            </Link>
           </div>
         </div>
       </div>

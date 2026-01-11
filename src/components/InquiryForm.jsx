@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useLanguage } from "../hooks/useLanguage"
 import { api } from "../lib/api"
 
-const InquiryForm = ({ propertyTitle }) => {
+const InquiryForm = ({ propertyTitle, propertyId }) => {
   const { t } = useLanguage()
   const [form, setForm] = useState({
     name: "",
@@ -20,8 +20,14 @@ const InquiryForm = ({ propertyTitle }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    await api.saveInquiry({ ...form, property: propertyTitle, status: "New", createdAt: new Date().toISOString() })
-    setStatus(t("inquiry.sent"))
+    const result = await api.saveInquiry({
+      ...form,
+      propertyTitle,
+      propertyId,
+      status: "New",
+      createdAt: new Date().toISOString()
+    })
+    setStatus(result?.via === "local" ? t("inquiry.savedLocal") : t("inquiry.sent"))
   }
 
   return (

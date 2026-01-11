@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { useLanguage } from "../hooks/useLanguage"
 import Hero from "../components/Hero"
 import SearchBar from "../components/SearchBar"
@@ -103,6 +104,19 @@ const Home = () => {
               </a>
             ))}
           </div>
+        </div>
+        <div className="rounded-3xl border border-white/40 bg-white/80 p-8 text-center">
+          <div className="text-xs uppercase tracking-[0.3em] text-brand-gold">Invest in Lebanon</div>
+          <h2 className="mt-3 text-2xl font-semibold text-brand-charcoal">Discover opportunities for GCC buyers & expats</h2>
+          <p className="mt-2 text-sm text-brand-slate">
+            Explore market insights, prime areas, and the buying process with AS.Properties.
+          </p>
+          <Link
+            to="/invest-in-lebanon"
+            className="mt-4 inline-flex rounded-full border border-brand-gold px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-brand-navy"
+          >
+            Learn more
+          </Link>
         </div>
       </section>
     </div>

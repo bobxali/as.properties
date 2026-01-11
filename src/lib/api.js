@@ -67,13 +67,30 @@ export const api = {
   async saveInquiry(payload) {
     try {
       const supabase = ensureSupabase()
-      const { error } = await supabase.from("inquiries").insert([payload])
+      const message = [
+        payload.message || "",
+        payload.propertyTitle ? `Property: ${payload.propertyTitle}` : "",
+        payload.appointment ? `Appointment: ${payload.appointment}` : ""
+      ]
+        .filter(Boolean)
+        .join("\n")
+      const record = {
+        name: payload.name || null,
+        phone: payload.phone || null,
+        email: payload.email || null,
+        message: message || null,
+        property_id: payload.propertyId || null,
+        preferred_contact: payload.preferredContact || null,
+        status: payload.status || "New",
+        created_at: payload.createdAt || new Date().toISOString()
+      }
+      const { error } = await supabase.from("inquiries").insert([record])
       if (error) throw error
-      return true
+      return { ok: true, via: "supabase" }
     } catch (error) {
       const existing = storage.get("inquiries", [])
       storage.set("inquiries", [...existing, { ...payload, id: Date.now() }])
-      return true
+      return { ok: true, via: "local", error: error?.message || "Supabase error" }
     }
   },
   async saveDraft(payload) {

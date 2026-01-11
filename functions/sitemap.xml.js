@@ -15,7 +15,7 @@ const fetchPropertyRows = async ({ supabaseUrl, anonKey }) => {
   if (!supabaseUrl || !anonKey) {
     return []
   }
-  const endpoint = `${supabaseUrl}/rest/v1/properties?select=id,created_at&order=created_at.desc&limit=10000`
+  const endpoint = `${supabaseUrl}/rest/v1/properties?select=id,updated_at,created_at&order=created_at.desc&limit=10000`
   const response = await fetch(endpoint, {
     headers: {
       apikey: anonKey,
@@ -43,6 +43,12 @@ export const onRequest = async ({ request, env }) => {
       lastmod: nowIso,
       changefreq: "daily",
       priority: "0.8"
+    }),
+    buildUrlEntry({
+      loc: `${origin}/invest-in-lebanon`,
+      lastmod: nowIso,
+      changefreq: "monthly",
+      priority: "0.7"
     })
   ]
 
@@ -56,7 +62,7 @@ export const onRequest = async ({ request, env }) => {
     entries.push(
       buildUrlEntry({
         loc: `${origin}/properties/${row.id}`,
-        lastmod: row.created_at || nowIso,
+        lastmod: row.updated_at || row.created_at || nowIso,
         changefreq: "weekly",
         priority: "0.6"
       })

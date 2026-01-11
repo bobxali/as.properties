@@ -1,10 +1,19 @@
 ﻿import { useEffect, useMemo, useState } from "react"
 import { useParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
+import { Helmet } from "react-helmet-async"
 import PropertyGrid from "../components/PropertyGrid"
 import InquiryForm from "../components/InquiryForm"
 import { sampleProperties } from "../data/mock"
 import { api } from "../lib/api"
+import {
+  availabilityFromStatus,
+  buildPropertyDescription,
+  buildPropertyFallbackDescription,
+  buildPropertyJsonLd,
+  buildPropertyTitle,
+  splitBilingual
+} from "../lib/seo"
 
 const fallbackGallery = [
   "https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=1600&auto=format&fit=crop",
@@ -38,6 +47,7 @@ const PropertyDetail = () => {
             area: Number(found.area || 0),
             status: found.status || "Available",
             views: Number(found.views || 0),
+            createdAt: found.updated_at || found.created_at || "",
             media: found.media || [],
             specs: found.specs || {}
           }
@@ -166,9 +176,7 @@ const PropertyDetail = () => {
   }
 
   const locationLabel = useMemo(() => {
-    const raw = String(property?.location || "")
-    if (!raw.includes("|")) return raw
-    const [ar, en] = raw.split("|").map((part) => part.trim())
+    const { ar, en } = splitBilingual(property?.location)
     return i18n.language === "ar" ? ar || en : en || ar
   }, [property, i18n.language])
   const formatNumber = (value) => {
@@ -280,8 +288,87 @@ const PropertyDetail = () => {
     )
   }
 
+  const locationSplit = splitBilingual(property.location)
+  const descriptionEn = property?.specs?.descriptions?.en || ""
+  const descriptionAr = property?.specs?.descriptions?.ar || ""
+  const fallbackDescription = buildPropertyFallbackDescription({
+    typeEn: (() => {
+      const list = Array.isArray(property.propertyTypes) ? property.propertyTypes : []
+      const rawType = list[0] || ""
+      const cleaned = String(rawType).replace(/[^\p{L}\s]/gu, "").trim()
+      const map = {
+        Apartment: "apartment",
+        Villa: "villa",
+        Land: "land",
+        Commercial: "commercial",
+        Office: "office",
+        Duplex: "duplex",
+        "شقة": "apartment",
+        "فيلا": "villa",
+        "أرض": "land",
+        "تجاري": "commercial",
+        "مكتب": "office",
+        "دوبلكس": "duplex"
+      }
+      return map[rawType] || map[cleaned] || cleaned
+    })(),
+    listingTypeEn: (() => {
+      const raw = String(property.listingType || "")
+      if (raw === "Sale" || raw === "للبيع") return "for sale"
+      if (raw === "Rent" || raw === "للإيجار") return "for rent"
+      if (raw.toLowerCase().includes("rent")) return "for rent"
+      if (raw.toLowerCase().includes("sale")) return "for sale"
+      return ""
+    })(),
+    area: property.area,
+    rooms: property.rooms,
+    baths: property.baths,
+    price: property.price,
+    currency: property.currency,
+    locationEn: locationSplit.en || locationSplit.ar
+  })
+  const metaDescription = buildPropertyDescription({
+    descriptionEn,
+    descriptionAr,
+    fallback: fallbackDescription
+  })
+  const titleEn = (/[A-Za-z]/.test(property?.title || "") ? property.title : "") || property?.specs?.descriptions?.en || ""
+  const metaTitle = buildPropertyTitle({
+    titleEn,
+    locationAr: locationSplit.ar || locationSplit.en,
+    locationEn: locationSplit.en || locationSplit.ar
+  })
+  const canonicalUrl = `${window.location.origin}/properties/${property.id}`
+  const mainImage = galleryImages[0] || ""
+  const jsonLd = buildPropertyJsonLd({
+    url: canonicalUrl,
+    title: metaTitle,
+    description: metaDescription,
+    image: mainImage,
+    currency: property.currency,
+    price: property.price,
+    availability: availabilityFromStatus(property.status),
+    createdAt: property.createdAt,
+    locality: locationSplit.en || locationSplit.ar
+  })
+
   return (
     <section className="reveal is-visible mx-auto w-full max-w-6xl space-y-10 px-6 py-12">
+      <Helmet>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        {mainImage ? <meta property="og:image" content={mainImage} /> : null}
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        {mainImage ? <meta name="twitter:image" content={mainImage} /> : null}
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
       <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
           <div className="relative overflow-hidden rounded-3xl">
@@ -360,7 +447,7 @@ const PropertyDetail = () => {
               <button className="rounded-full border border-white/40 px-3 py-1">{tEn("detail.shareCopy")}</button>
             </div>
           </div>
-          <InquiryForm propertyTitle={property.title} />
+          <InquiryForm propertyTitle={property.title} propertyId={property.id} />
           <div className="flex justify-center">
             <a
               href={`https://wa.me/96171115980?text=${encodeURIComponent(`Hi AS.Properties, I'm interested in ${property.title}.`)}`
