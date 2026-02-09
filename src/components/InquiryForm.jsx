@@ -20,6 +20,16 @@ const InquiryForm = ({ propertyTitle, propertyId }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    const whatsappMessage = [
+      `Hi AS.Properties, I'm interested in ${propertyTitle || "a listing"}.`,
+      form.name ? `Name: ${form.name}` : "",
+      form.phone ? `Phone: ${form.phone}` : "",
+      form.email ? `Email: ${form.email}` : "",
+      form.message ? `Message: ${form.message}` : ""
+    ]
+      .filter(Boolean)
+      .join("\n")
+    const whatsappUrl = `https://wa.me/96171115980?text=${encodeURIComponent(whatsappMessage)}`
     const result = await api.saveInquiry({
       ...form,
       propertyTitle,
@@ -28,6 +38,7 @@ const InquiryForm = ({ propertyTitle, propertyId }) => {
       createdAt: new Date().toISOString()
     })
     setStatus(result?.via === "local" ? t("inquiry.savedLocal") : t("inquiry.sent"))
+    window.location.href = whatsappUrl
   }
 
   return (

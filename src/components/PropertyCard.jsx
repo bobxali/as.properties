@@ -27,8 +27,14 @@ const listingTypeKey = {
   "للإيجار": "listing.forRent"
 }
 
-const PropertyCard = ({ property, showCompare = false, selected = false, onToggleCompare, showWhatsapp = true }) => {
+const PropertyCard = ({ property, showWhatsapp = true }) => {
   const { t, i18n } = useTranslation()
+  const splitBilingual = (value) => {
+    const raw = String(value || "")
+    if (!raw.includes("|")) return { ar: raw, en: "" }
+    const [ar, en] = raw.split("|").map((part) => part.trim())
+    return { ar: ar || en || "", en: en || ar || "" }
+  }
   const images = useMemo(() => {
     if (property.media?.images && Array.isArray(property.media.images)) {
       return property.media.images.map((item) => item?.url || item?.path || item).filter(Boolean)
@@ -82,7 +88,9 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
   const typeLabel = (() => {
     const list = Array.isArray(property.propertyTypes) ? property.propertyTypes : []
     const rawType = list[0] || property.propertyType || ""
-    const normalizedType = String(rawType)
+    const { ar, en } = splitBilingual(rawType)
+    const localizedType = i18n.language === "ar" ? ar || en : en || ar
+    const normalizedType = String(localizedType || rawType)
       .replace(/[^\p{L}\s]/gu, "")
       .replace(/\s+/g, " ")
       .trim()
@@ -93,15 +101,19 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
       Commercial: "types.commercial",
       Office: "types.office",
       Duplex: "types.duplex",
+      Store: "types.store",
+      Shop: "types.store",
       "شقة": "types.apartment",
       "فيلا": "types.villa",
       "أرض": "types.land",
       "تجاري": "types.commercial",
       "مكتب": "types.office",
-      "دوبلكس": "types.duplex"
+      "دوبلكس": "types.duplex",
+      "متجر": "types.store",
+      "محل": "types.store"
     }
-    const key = map[rawType] || map[normalizedType]
-    return key ? t(key) : normalizedType || rawType
+    const key = map[localizedType] || map[normalizedType] || map[rawType]
+    return key ? t(key) : normalizedType || localizedType || rawType
   })()
   const viewSuffix = (() => {
     const features = Array.isArray(property.specs?.features) ? property.specs.features : []
@@ -171,20 +183,8 @@ const PropertyCard = ({ property, showCompare = false, selected = false, onToggl
           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        {showCompare ? (
-          <button
-            className="absolute right-4 top-4 rounded-full border border-white/50 bg-white/90 px-3 py-1 text-xs text-brand-slate"
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onToggleCompare?.(property.id)
-            }}
-          >
-            {selected ? t("listing.compared") : t("listing.compare")}
-          </button>
-        ) : null}
         {property.hotDeal ? (
-          <div className="absolute top-4 right-4 rounded-full bg-brand-gold px-3 py-1 text-xs font-semibold text-brand-charcoal shadow-lg">
+          <div className="absolute top-4 right-4 rounded-full border border-brand-gold/80 bg-black px-3 py-1 text-xs font-semibold text-brand-gold shadow-lg">
             {t("listing.hotDeal")}
           </div>
         ) : null}

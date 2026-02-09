@@ -48,7 +48,6 @@ const Home = () => {
     <div>
       <Hero />
       <section className="reveal mx-auto w-full max-w-6xl space-y-10 px-6 py-12">
-        <SearchBar />
         <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
           <div className="space-y-6">
             <SectionHeader
@@ -60,6 +59,7 @@ const Home = () => {
               properties={properties.slice().sort((a, b) => Number(b.hotDeal) - Number(a.hotDeal))}
               showWhatsapp={false}
             />
+            <SearchBar />
           </div>
           <div className="space-y-6">
             <SectionHeader

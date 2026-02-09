@@ -36,6 +36,8 @@
     "typeLand": "Land",
     "typeCommercial": "Commercial",
     "typeOffice": "Office",
+    "typeDuplex": "Duplex",
+    "typeStore": "Store",
     "sortNewest": "Newest first",
     "sortPriceLow": "Price low to high",
     "sortPriceHigh": "Price high to low",
@@ -84,7 +86,8 @@
     "land": "land",
     "commercial": "commercial",
     "office": "office",
-    "duplex": "duplex"
+    "duplex": "duplex",
+    "store": "store"
   },
   "status": {
     "available": "Available",

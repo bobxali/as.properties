@@ -36,6 +36,8 @@
     "typeLand": "أرض",
     "typeCommercial": "تجاري",
     "typeOffice": "مكتب",
+    "typeDuplex": "دوبلكس",
+    "typeStore": "متجر",
     "sortNewest": "الأحدث أولاً",
     "sortPriceLow": "السعر من الأقل إلى الأعلى",
     "sortPriceHigh": "السعر من الأعلى إلى الأقل",
@@ -84,7 +86,8 @@
     "land": "أرض",
     "commercial": "تجاري",
     "office": "مكتب",
-    "duplex": "دوبلكس"
+    "duplex": "دوبلكس",
+    "store": "متجر"
   },
   "status": {
     "available": "متوفر",

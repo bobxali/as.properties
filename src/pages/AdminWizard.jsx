@@ -115,7 +115,7 @@ const AdminWizard = () => {
     return signed?.data?.signedUrl || ""
   }
 
-  const propertyTypes = useCustomOptions("property_type", ["شقة 🏢", "فيلا 🏡", "أرض 🏞️", "محل تجاري 🏪", "مكتب 🏢", "دوبلكس 🏘️"])
+  const propertyTypes = useCustomOptions("property_type", ["شقة 🏢", "فيلا 🏡", "أرض 🏞️", "محل تجاري 🏪", "مكتب 🏢", "دوبلكس 🏘️", "متجر 🏬"])
   const listingTypes = useCustomOptions("listing_type", ["للبيع", "للإيجار"])
   const locations = useCustomOptions("locations", [
     "الحمرا | Hamra",

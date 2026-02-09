@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react"
-import { useTranslation } from "react-i18next"
 import SearchBar from "../components/SearchBar"
 import PropertyGrid from "../components/PropertyGrid"
 import MapPanel from "../components/MapPanel"
@@ -7,9 +6,7 @@ import { sampleProperties } from "../data/mock"
 import { api } from "../lib/api"
 
 const Listings = () => {
-  const { t } = useTranslation()
   const [filters, setFilters] = useState(null)
-  const [compareIds, setCompareIds] = useState([])
   const [properties, setProperties] = useState(sampleProperties)
 
   useEffect(() => {
@@ -73,29 +70,8 @@ const Listings = () => {
 
   return (
     <section className="reveal mx-auto w-full max-w-6xl space-y-8 px-6 py-12">
-      <SearchBar onSearch={setFilters} />
-      {compareIds.length ? (
-        <div className="rounded-3xl border border-white/40 bg-white/80 p-4 text-sm text-brand-slate">
-          {t("listings.comparing", { count: compareIds.length })}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {properties
-              .filter((property) => compareIds.includes(property.id))
-              .map((property) => (
-                <div key={property.id} className="rounded-full bg-brand-charcoal/10 px-3 py-1 text-xs text-brand-charcoal">
-                  {property.title}
-                </div>
-              ))}
-          </div>
-        </div>
-      ) : null}
       <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
-        <PropertyGrid
-          properties={filtered}
-          compareIds={compareIds}
-          onToggleCompare={(id) => {
-            setCompareIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-          }}
-        />
+        <PropertyGrid properties={filtered} />
         <MapPanel
           pins={filtered.map((property, index) => ({
             id: property.id,
@@ -105,6 +81,7 @@ const Listings = () => {
           }))}
         />
       </div>
+      <SearchBar onSearch={setFilters} />
     </section>
   )
 }

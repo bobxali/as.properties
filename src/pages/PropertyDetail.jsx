@@ -11,8 +11,7 @@ import {
   buildPropertyDescription,
   buildPropertyFallbackDescription,
   buildPropertyJsonLd,
-  buildPropertyTitle,
-  splitBilingual
+  buildPropertyTitle
 } from "../lib/seo"
 
 const fallbackGallery = [
@@ -188,7 +187,9 @@ const PropertyDetail = () => {
   const typeLabel = useMemo(() => {
     const list = Array.isArray(property?.propertyTypes) ? property.propertyTypes : []
     const rawType = list[0] || ""
-    const normalizedType = String(rawType)
+    const { ar, en } = splitBilingual(rawType)
+    const localizedType = i18n.language === "ar" ? ar || en : en || ar
+    const normalizedType = String(localizedType || rawType)
       .replace(/[^\p{L}\s]/gu, "")
       .replace(/\s+/g, " ")
       .trim()
@@ -199,15 +200,19 @@ const PropertyDetail = () => {
       Commercial: "types.commercial",
       Office: "types.office",
       Duplex: "types.duplex",
+      Store: "types.store",
+      Shop: "types.store",
       "شقة": "types.apartment",
       "فيلا": "types.villa",
       "أرض": "types.land",
       "تجاري": "types.commercial",
       "مكتب": "types.office",
-      "دوبلكس": "types.duplex"
+      "دوبلكس": "types.duplex",
+      "متجر": "types.store",
+      "محل": "types.store"
     }
-    const key = map[rawType] || map[normalizedType]
-    return key ? t(key) : normalizedType || rawType
+    const key = map[localizedType] || map[normalizedType] || map[rawType]
+    return key ? t(key) : normalizedType || localizedType || rawType
   }, [property, t])
   const listingTypeInline = useMemo(() => {
     const raw = String(property?.listingType || "")
@@ -303,12 +308,16 @@ const PropertyDetail = () => {
         Commercial: "commercial",
         Office: "office",
         Duplex: "duplex",
+        Store: "store",
+        Shop: "store",
         "شقة": "apartment",
         "فيلا": "villa",
         "أرض": "land",
         "تجاري": "commercial",
         "مكتب": "office",
-        "دوبلكس": "duplex"
+        "دوبلكس": "duplex",
+        "متجر": "store",
+        "محل": "store"
       }
       return map[rawType] || map[cleaned] || cleaned
     })(),
@@ -436,15 +445,50 @@ const PropertyDetail = () => {
               >
                 {tEn("detail.whatsappCta")}
               </a>
-              <button className="rounded-2xl border border-brand-navy px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-navy">
+              <a
+                href={`https://wa.me/96171115980?text=${encodeURIComponent(`Hi AS.Properties, I'd like to schedule a viewing for ${property.title}.`)}`}
+                className="rounded-2xl border border-brand-navy px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-brand-navy text-center"
+                target="_blank"
+                rel="noreferrer"
+              >
                 {tEn("detail.schedule")}
-              </button>
+              </a>
             </div>
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              <button className="rounded-full border border-white/40 px-3 py-1">{tEn("detail.shareFacebook")}</button>
-              <button className="rounded-full border border-white/40 px-3 py-1">{tEn("detail.shareInstagram")}</button>
-              <button className="rounded-full border border-white/40 px-3 py-1">{tEn("detail.shareWhatsApp")}</button>
-              <button className="rounded-full border border-white/40 px-3 py-1">{tEn("detail.shareCopy")}</button>
+              <a
+                className="rounded-full border border-white/40 px-3 py-1"
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {tEn("detail.shareFacebook")}
+              </a>
+              <a
+                className="rounded-full border border-white/40 px-3 py-1"
+                href="https://instagram.com/as.properties.lb"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {tEn("detail.shareInstagram")}
+              </a>
+              <a
+                className="rounded-full border border-white/40 px-3 py-1"
+                href={`https://wa.me/?text=${encodeURIComponent(`${metaTitle} - ${canonicalUrl}`)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {tEn("detail.shareWhatsApp")}
+              </a>
+              <button
+                className="rounded-full border border-white/40 px-3 py-1"
+                onClick={() => {
+                  if (navigator?.clipboard?.writeText) {
+                    navigator.clipboard.writeText(canonicalUrl)
+                  }
+                }}
+              >
+                {tEn("detail.shareCopy")}
+              </button>
             </div>
           </div>
           <InquiryForm propertyTitle={property.title} propertyId={property.id} />

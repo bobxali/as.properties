@@ -69,6 +69,8 @@ const SearchBar = ({ onSearch }) => {
           <option value="Land">{t("search.typeLand")}</option>
           <option value="Commercial">{t("search.typeCommercial")}</option>
           <option value="Office">{t("search.typeOffice")}</option>
+          <option value="Duplex">{t("search.typeDuplex")}</option>
+          <option value="Store">{t("search.typeStore")}</option>
         </select>
         <select
           className="w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm"
